@@ -137,8 +137,9 @@ print(df_joined)
 
 # save to csv
 ts = str(datetime.now().timestamp())
-tmp_sql_path = '/tmp/joined_' + task_id + ts + '.sql'
-tmp_csv_path = '/tmp/joined_' + task_id + ts + '.csv'
+os.makedirs("/tmp/dcfs", exist_ok=True)
+tmp_sql_path = '/tmp/dcfs/joined_' + task_id + ts + '.sql'
+tmp_csv_path = '/tmp/dcfs/joined_' + task_id + ts + '.csv'
 table_name = task_info['hds']['table']
 with open(tmp_sql_path, 'w') as wf:
     wf.write(task_info['hds']['sql'])
