@@ -6,7 +6,8 @@ import sys
 import time
 from datetime import datetime
 
-# add paths, otherwise python3 launched by DCFS would go wrong
+# Add python paths, otherwise python3 launched by DCFS could not find the packages
+# By executing print(sys.path) in your environment, and add the result to the sys.path here
 for p in ['', '/usr/lib/python36.zip', '/usr/lib/python3.6', '/usr/lib/python3.6/lib-dynload', '/home/brad/.local/lib/python3.6/site-packages', '/usr/local/lib/python3.6/dist-packages', '/usr/lib/python3/dist-packages']:
     sys.path.append(p)
 #sys.path.append('/home/brad/hadoop-3.2.2/bin')
