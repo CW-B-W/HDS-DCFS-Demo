@@ -148,7 +148,8 @@ df_joined.to_csv(tmp_csv_path, index=False, header=False)
 
 ''' ========== Phoenix ========== '''
 import subprocess
-cmd = "/home/brad/phoenix-hbase-2.3-5.1.2-bin/bin/psql.py 192.168.103.151 -t %s %s %s" % (table_name.upper(), tmp_sql_path, tmp_csv_path)
+phoenix_home = os.environ['PHOENIX_HOME']
+cmd = phoenix_home+"/bin/psql.py 192.168.103.151 -t %s %s %s" % (table_name.upper(), tmp_sql_path, tmp_csv_path)
 process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
 process.wait()
 ''' ========== Phoenix ========== '''
