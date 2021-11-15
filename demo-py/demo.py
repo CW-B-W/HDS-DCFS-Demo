@@ -143,7 +143,7 @@ except Exception as e:
     send_task_status(task_id, TASKSTATUS_FAILED, "Error in joining the two tables: " + str(e))
     exit(1)
 
-print(df_joined)
+#print(df_joined)
 columns_order = task_info['hds']['columns']
 df_joined = df_joined.reindex(columns_order, axis=1)
 print(df_joined)
@@ -176,8 +176,5 @@ else:
     send_task_status(task_id, TASKSTATUS_PROCESSING, "Successfully import table into HDS")
 ''' ========== Phoenix ========== '''
 
-if process.returncode == 0:
-    send_task_status(task_id, TASKSTATUS_SUCCEEDED, "Job finished")
-else:
-    send_task_status(task_id, TASKSTATUS_FAILED, "Error in importing result into HDS")
+send_task_status(task_id, TASKSTATUS_SUCCEEDED, "Job finished")
 exit()
