@@ -166,8 +166,14 @@ import subprocess
 #phoenix_home = os.environ['PHOENIX_HOME']
 phoenix_home = "/home/brad/phoenix-hbase-2.3-5.1.2-bin"
 cmd = phoenix_home+"/bin/psql.py 192.168.103.151 -t %s %s %s" % (table_name.upper(), tmp_sql_path, tmp_csv_path)
-process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-process.wait()
+process = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+stdout, stderr = process.communicate()
+exit_code = process.wait()
+if exit_code != 0:
+    send_task_status(task_id, TASKSTATUS_FAILED, "Failed to import table into HDS\n" + stderr.decode('utf-8'))
+    exit(1)
+else:
+    send_task_status(task_id, TASKSTATUS_PROCESSING, "Successfully import table into HDS")
 ''' ========== Phoenix ========== '''
 
 if process.returncode == 0:
