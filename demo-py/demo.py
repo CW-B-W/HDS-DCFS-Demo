@@ -1,13 +1,11 @@
-do_sleep = True
-#do_sleep = False
+#do_sleep = True
+do_sleep = False
 
 import os
 import sys
 import time
 from datetime import datetime
-
-# Add python paths, otherwise python3 launched by DCFS could not find the packages
-# By executing print(sys.path) in your environment, and add the result to the sys.path here
+# add paths, otherwise python3 launched by DCFS would go wrong
 for p in ['', '/usr/lib/python36.zip', '/usr/lib/python3.6', '/usr/lib/python3.6/lib-dynload', '/home/brad/.local/lib/python3.6/site-packages', '/usr/local/lib/python3.6/dist-packages', '/usr/lib/python3/dist-packages']:
     sys.path.append(p)
 #sys.path.append('/home/brad/hadoop-3.2.2/bin')
@@ -97,6 +95,22 @@ for i, d in enumerate(task_info['db']):
         except Exception as e:
             send_task_status(task_id, TASKSTATUS_FAILED, "Error in retrieving data from MSSQL: " + str(e))
             exit(1)
+    elif db_type == 'oracle':
+        try:
+            username = d['username']
+            password = d['password']
+            ip       = d['ip']
+            port     = d['port']
+            db_name  = d['db']
+            db_url   = 'oracle+cx_oracle://%s:%s@%s:%s/?service_name=%s' % (username, password, ip, port, db_name)
+            db_engine          = create_engine(db_url)
+            send_task_status(task_id, TASKSTATUS_PROCESSING, "Retrieving data from OracleDB")
+            if do_sleep:
+                time.sleep(5)
+            locals()['df%d'%i] = pd.read_sql(d['sql'], con=db_engine)
+        except Exception as e:
+            send_task_status(task_id, TASKSTATUS_FAILED, "Error in retrieving data from OracleDB: " + str(e))
+            exit(1)
     elif db_type == 'mongodb':
         try:
             username = d['username']
@@ -149,7 +163,8 @@ df_joined.to_csv(tmp_csv_path, index=False, header=False)
 
 ''' ========== Phoenix ========== '''
 import subprocess
-phoenix_home = os.environ['PHOENIX_HOME']
+#phoenix_home = os.environ['PHOENIX_HOME']
+phoenix_home = "/home/brad/phoenix-hbase-2.3-5.1.2-bin"
 cmd = phoenix_home+"/bin/psql.py 192.168.103.151 -t %s %s %s" % (table_name.upper(), tmp_sql_path, tmp_csv_path)
 process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
 process.wait()
