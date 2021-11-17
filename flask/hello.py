@@ -94,7 +94,7 @@ from sqlalchemy import create_engine
 def mysql_list_all_dbs(username, password, ip, port='3306'):
 #db1_engine = create_engine(r"mysql+pymysql://brad:00000000@Brad-HDS-Master:3306/")
     db1_engine = create_engine("mysql+pymysql://%s:%s@%s:%s/" % (username, password, ip, port))
-    df1 = pd.read_sql("SHOW DATABASES", con=db1_engine)
+    df1 = pd.read_sql("SHOW DATABASES;", con=db1_engine)
     return df1.iloc[:,0].tolist()
 
 def mysql_list_all_tables(db_name, username, password, ip, port='3306'):
@@ -135,9 +135,36 @@ def mssql_list_all_keys(db_name, table_name, username, password, ip, port='1433'
     return df1.iloc[:,0].tolist()
 
 
-''' ================ MySQL ================ '''
+''' ================ MsSQL ================ '''
+
+''' ================ oracle ================ '''
+import pandas as pd
+from pandasql import sqldf
+from sqlalchemy import create_engine
+import cx_Oracle
+from sqlalchemy import *
+#db1_engine = create_engine(r"oracle+cx_oracle://brad:00000000@192.168.103.60:1521/?service_name=XEPDB1")
+
+def oracle_list_all_dbs(username, password, ip, port='1521'):
+    db1_engine = create_engine(r"oracle+cx_oracle://%s:%s@%s:%s/?service_name=XEPDB1" % (username, password, ip, port))
+    df1 = pd.read_sql("select * from global_name", con=db1_engine)
+    return df1.iloc[:,0].tolist()
+
+def oracle_list_all_tables(db_name, username, password, ip, port='1521'):
+    #db1_engine = create_engine(r"oracle+cx_oracle://%s:%s@%s:%s/%s" % (username, password, ip, port, db_name))
+    #df1 = pd.read_sql("SELECT table_name FROM user_tables", con=db1_engine)
+    db1_engine = create_engine(r"oracle+cx_oracle://%s:%s@%s:%s/?service_name=%s" % (username, password, ip, port, db_name))
+    df1 = pd.read_sql("SELECT table_name FROM user_tables", con=db1_engine)
+    return df1.iloc[:,0].tolist()
+
+def oracle_list_all_keys(db_name, table_name, username, password, ip, port='1521'):
+    db1_engine = create_engine(r"oracle+cx_oracle://%s:%s@%s:%s/?service_name=%s" % (username, password, ip, port, db_name))
+    df1 = pd.read_sql("SELECT column_name FROM all_tab_cols WHERE table_name = '%s'" % table_name, con=db1_engine);
+    return df1.iloc[:,0].tolist()
 
 
+
+''' ================ oracle ================ '''
 
 ''' ================ Flask ================ '''
 from flask import Flask, request, render_template
@@ -286,6 +313,53 @@ def mssql_keys():
         return ret_dict 
     except:
         return "Error connecting to MSSQL server", 403
+
+''' ----- Oracle ----- '''
+@app.route('/oracle/listdbs', methods=['GET'])
+def oracle_dbs():
+    try:
+        username = request.args.get('username')
+        password = request.args.get('password')
+        ip       = request.args.get('ip')
+        port     = request.args.get('port')
+        ret_dict = {
+            'db_list': oracle_list_all_dbs(username, password, ip, port)
+        }
+        return ret_dict 
+    except:
+        return "Error connecting to Oracle server", 403
+
+@app.route('/oracle/listtables', methods=['GET'])
+def oracle_tables():
+    try:
+        username = request.args.get('username')
+        password = request.args.get('password')
+        ip       = request.args.get('ip')
+        port     = request.args.get('port')
+        db_name = request.args.get('db_name')
+        ret_dict = {
+            'table_list': oracle_list_all_tables(db_name, username, password, ip, port)
+        }
+        return ret_dict 
+    except:
+        return "Error connecting to Oracle server", 403
+
+
+@app.route('/oracle/listkeys', methods=['GET'])
+def oracle_keys():
+    try:
+        username = request.args.get('username')
+        password = request.args.get('password')
+        ip       = request.args.get('ip')
+        port     = request.args.get('port')
+        db_name  = request.args.get('db_name')
+        table_name = request.args.get('table_name')
+        ret_dict = {
+            'key_list': oracle_list_all_keys(db_name, table_name, username, password, ip, port)
+        }
+        return ret_dict 
+    except:
+        return "Error connecting to Oracle server", 403
 
 ''' ----- TaskStatus ----- '''
 @app.route('/taskstatus', methods=['GET'])
