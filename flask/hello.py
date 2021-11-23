@@ -108,8 +108,6 @@ def mysql_list_all_keys(db_name, table_name, username, password, ip, port='3306'
     db1_engine = create_engine("mysql+pymysql://%s:%s@%s:%s/%s" % (username, password, ip, port, db_name))
     df_col = pd.read_sql("SELECT `COLUMN_NAME` FROM `INFORMATION_SCHEMA`.`COLUMNS` WHERE `TABLE_SCHEMA`='%s' AND `TABLE_NAME`='%s'" % (db_name, table_name), con=db1_engine);
     return df_col['COLUMN_NAME'].tolist()
-
-
 ''' ================ MySQL ================ '''
 
 
@@ -133,11 +131,11 @@ def mssql_list_all_keys(db_name, table_name, username, password, ip, port='1433'
     db1_engine = create_engine("mssql+pymssql://%s:%s@%s:%s/%s" % (username, password, ip, port, db_name))
     df1 = pd.read_sql("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='%s' ORDER BY ORDINAL_POSITION" % table_name, con=db1_engine);
     return df1.iloc[:,0].tolist()
+''' ================ MSSQL ================ '''
 
 
-''' ================ MsSQL ================ '''
 
-''' ================ oracle ================ '''
+''' ================ Oracle ================ '''
 import pandas as pd
 from pandasql import sqldf
 from sqlalchemy import create_engine
@@ -151,8 +149,6 @@ def oracle_list_all_dbs(username, password, ip, port='1521'):
     return df1.iloc[:,0].tolist()
 
 def oracle_list_all_tables(db_name, username, password, ip, port='1521'):
-    #db1_engine = create_engine(r"oracle+cx_oracle://%s:%s@%s:%s/%s" % (username, password, ip, port, db_name))
-    #df1 = pd.read_sql("SELECT table_name FROM user_tables", con=db1_engine)
     db1_engine = create_engine(r"oracle+cx_oracle://%s:%s@%s:%s/?service_name=%s" % (username, password, ip, port, db_name))
     df1 = pd.read_sql("SELECT table_name FROM user_tables", con=db1_engine)
     return df1.iloc[:,0].tolist()
@@ -161,10 +157,33 @@ def oracle_list_all_keys(db_name, table_name, username, password, ip, port='1521
     db1_engine = create_engine(r"oracle+cx_oracle://%s:%s@%s:%s/?service_name=%s" % (username, password, ip, port, db_name))
     df1 = pd.read_sql("SELECT column_name FROM all_tab_cols WHERE table_name = '%s'" % table_name, con=db1_engine);
     return df1.iloc[:,0].tolist()
+''' ================ Oracle ================ '''
 
 
 
-''' ================ oracle ================ '''
+''' ================ Phoenix ================ '''
+import phoenixdb
+import phoenixdb.cursor
+# database_url = 'http://192.168.103.53:8765/'
+
+def phoenix_list_all_tables(ip, port='8765'):
+    conn = phoenixdb.connect('http://%s:%s' % (ip, port))
+    cursor = conn.cursor(cursor_factory=phoenixdb.cursor.DictCursor)
+    cursor.execute("select DISTINCT(\"TABLE_NAME\") from SYSTEM.CATALOG")
+    res = cursor.fetchall()
+    l = [item['TABLE_NAME'] for item in res]
+    return l
+
+def phoenix_list_all_keys(table_name, ip, port='1521'):
+    conn = phoenixdb.connect('http://%s:%s' % (ip, port))
+    cursor = conn.cursor(cursor_factory=phoenixdb.cursor.DictCursor)
+    cursor.execute("SELECT column_name FROM system.catalog WHERE table_name = '%s' AND column_name IS NOT NULL" % table_name)
+    res = cursor.fetchall()
+    l = [item['COLUMN_NAME'] for item in res]
+    return l
+''' ================ Phoenix ================ '''
+
+
 
 ''' ================ Flask ================ '''
 from flask import Flask, request, render_template
@@ -242,7 +261,7 @@ def mysql_tables():
         password = request.args.get('password')
         ip       = request.args.get('ip')
         port     = request.args.get('port')
-        db_name = request.args.get('db_name')
+        db_name  = request.args.get('db_name')
         ret_dict = {
             'table_list': mysql_list_all_tables(db_name, username, password, ip, port)
         }
@@ -250,15 +269,14 @@ def mysql_tables():
     except:
         return "Error connecting to MySQL server", 403
 
-
 @app.route('/mysql/listkeys', methods=['GET'])
 def mysql_keys():
     try:
-        username = request.args.get('username')
-        password = request.args.get('password')
-        ip       = request.args.get('ip')
-        port     = request.args.get('port')
-        db_name  = request.args.get('db_name')
+        username   = request.args.get('username')
+        password   = request.args.get('password')
+        ip         = request.args.get('ip')
+        port       = request.args.get('port')
+        db_name    = request.args.get('db_name')
         table_name = request.args.get('table_name')
         ret_dict = {
             'key_list': mysql_list_all_keys(db_name, table_name, username, password, ip, port)
@@ -289,7 +307,7 @@ def mssql_tables():
         password = request.args.get('password')
         ip       = request.args.get('ip')
         port     = request.args.get('port')
-        db_name = request.args.get('db_name')
+        db_name  = request.args.get('db_name')
         ret_dict = {
             'table_list': mssql_list_all_tables(db_name, username, password, ip, port)
         }
@@ -297,15 +315,14 @@ def mssql_tables():
     except:
         return "Error connecting to MSSQL server", 403
 
-
 @app.route('/mssql/listkeys', methods=['GET'])
 def mssql_keys():
     try:
-        username = request.args.get('username')
-        password = request.args.get('password')
-        ip       = request.args.get('ip')
-        port     = request.args.get('port')
-        db_name  = request.args.get('db_name')
+        username   = request.args.get('username')
+        password   = request.args.get('password')
+        ip         = request.args.get('ip')
+        port       = request.args.get('port')
+        db_name    = request.args.get('db_name')
         table_name = request.args.get('table_name')
         ret_dict = {
             'key_list': mssql_list_all_keys(db_name, table_name, username, password, ip, port)
@@ -336,7 +353,7 @@ def oracle_tables():
         password = request.args.get('password')
         ip       = request.args.get('ip')
         port     = request.args.get('port')
-        db_name = request.args.get('db_name')
+        db_name  = request.args.get('db_name')
         ret_dict = {
             'table_list': oracle_list_all_tables(db_name, username, password, ip, port)
         }
@@ -344,15 +361,14 @@ def oracle_tables():
     except:
         return "Error connecting to Oracle server", 403
 
-
 @app.route('/oracle/listkeys', methods=['GET'])
 def oracle_keys():
     try:
-        username = request.args.get('username')
-        password = request.args.get('password')
-        ip       = request.args.get('ip')
-        port     = request.args.get('port')
-        db_name  = request.args.get('db_name')
+        username   = request.args.get('username')
+        password   = request.args.get('password')
+        ip         = request.args.get('ip')
+        port       = request.args.get('port')
+        db_name    = request.args.get('db_name')
         table_name = request.args.get('table_name')
         ret_dict = {
             'key_list': oracle_list_all_keys(db_name, table_name, username, password, ip, port)
@@ -360,6 +376,32 @@ def oracle_keys():
         return ret_dict 
     except:
         return "Error connecting to Oracle server", 403
+
+''' ----- Phoenix ----- '''
+@app.route('/phoenix/listtables', methods=['GET'])
+def phoenix_tables():
+    try:
+        ip       = request.args.get('ip')
+        port     = request.args.get('port')
+        ret_dict = {
+            'table_list': phoenix_list_all_tables(ip, port)
+        }
+        return ret_dict 
+    except:
+        return "Error connecting to Phoenix server", 403
+
+@app.route('/phoenix/listkeys', methods=['GET'])
+def phoenix_keys():
+    try:
+        ip         = request.args.get('ip')
+        port       = request.args.get('port')
+        table_name = request.args.get('table_name')
+        ret_dict = {
+            'key_list': phoenix_list_all_keys(table_name, ip, port)
+        }
+        return ret_dict 
+    except:
+        return "Error connecting to Phoenix server", 403
 
 ''' ----- TaskStatus ----- '''
 @app.route('/taskstatus', methods=['GET'])
