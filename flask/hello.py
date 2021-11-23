@@ -188,13 +188,19 @@ def phoenix_list_all_keys(table_name, ip, port='1521'):
 ''' ================ Flask ================ '''
 from flask import Flask, request, render_template
 from flask import render_template
+from flask import session
 from flask_cors import CORS
 #You need to use following line [app Flask(__name__]
 app = Flask(__name__, template_folder='template')
+class Config(object):
+    SECRET_KEY = "DSLAB"
+app.config.from_object(Config())
 CORS(app)
 
 @app.route('/hello')
 def hello():
+    print(session.get('id'))
+    session['id'] = "hello"
     return 'Hello, Flask'
 
 @app.route('/about/')
@@ -416,7 +422,68 @@ def task_status():
         print(e)
         return "Task not found", 400
         
+''' ----- HDS Download ----- '''
+import requests
+import uuid
+@app.route('/hds/task', methods=['GET'])
+def hds_task():
+    hds_ip   = request.args.get('ip')
+    hds_port = request.args.get('port')
+    hds_sql  = request.args.get('sql')
+    print(hds_sql)
 
+    flask_task_id = str(uuid.uuid4())
+    hds_url  = f'http://{hds_ip}:{hds_port}/dataservice/v1/access?from=jdbc:///&info=jdbc:phoenix:192.168.103.53:2181&query={hds_sql}&to=file:///tmp/flask/{flask_task_id}&async=true'
+    r = requests.get(hds_url)
+    if r.status_code == 200:
+        hds_task_id = r.json()['task']['id']
+    else:
+        return "Failed to connect with HDS", 400
+
+    if session.get('task_list') is None:
+        session['task_list'] = {}
+    session['task_list'][hds_task_id] = flask_task_id
+
+    return r.json()
+
+@app.route('/hds/watch', methods=['GET'])
+def hds_watch():
+    hds_ip   = request.args.get('ip')
+    hds_port = request.args.get('port')
+
+    my_task_list = session.get('task_list')
+    if my_task_list is None:
+        return {}
+    
+    hds_url = f'http://{hds_ip}:{hds_port}/dataservice/v1/watch?history=false'
+    r = requests.get(hds_url)
+    if r.status_code == 200:
+        my_runnung_task_list = [item['id'] for item in r.json()['task'] if item['id'] in my_task_list]
+        # my_runnung_task_list will be an array containing hds_task_ids
+    else:
+        return "Failed to connect with HDS", 400
+
+    my_finished_task_list = [t for t in my_task_list if not t in my_runnung_task_list]
+
+    if session.get('downloadable') is None:
+        session['downloadable'] = []
+    for t in my_finished_task_list:
+        flask_task_id = session['task_list'][t]
+        session['downloadable'].append(flask_task_id) 
+    
+    print(my_runnung_task_list)
+    return r.json()
+
+@app.route('/hds/downloadable', methods=['GET'])
+def hds_downloadable():
+    hds_ip   = request.args.get('ip')
+    hds_port = request.args.get('port')
+
+    if session.get('downloadable') is None:
+        return ''
+    downloadable = session['downloadable']
+    downlinks = [f'http://{hds_ip}:{hds_port}/dataservice/v1/access?from=/tmp/flask/{ftid}&to=local:///' for ftid in downloadable]
+    return downlinks
 
 @app.route('/')
 def index():
