@@ -135,6 +135,11 @@ for i, d in enumerate(task_info['db']):
             print(str(e))
             send_task_status(task_id, TASKSTATUS_FAILED, "Error in retrieving data from MongoDB: " + str(e))
             exit(1)
+    else:
+        print("Unsupported DB type " + db_type)
+        send_task_status(task_id, TASKSTATUS_FAILED, "Unsupported DB type " + db_type)
+        exit(1)
+        
     print(locals()['df%d'%i])
 
 if len(task_info['db']) < 2:
