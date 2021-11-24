@@ -56,6 +56,7 @@ try:
 except Exception as e:
     with open(taskinfo_filepath, 'r') as rf:
         content = rf.readlines()
+    print(str(e))
     send_task_status(str(-1), TASKSTATUS_UNKNOWN, str(e))
     exit(1)
 
@@ -77,6 +78,7 @@ for i, d in enumerate(task_info['db']):
                 time.sleep(5)
             locals()['df%d'%i] = pd.read_sql(d['sql'], con=db_engine)
         except Exception as e:
+            print(str(e))
             send_task_status(task_id, TASKSTATUS_FAILED, "Error in retrieving data from MySQL: " + str(e))
             exit(1)
     elif db_type == 'mssql':
@@ -93,6 +95,7 @@ for i, d in enumerate(task_info['db']):
                 time.sleep(5)
             locals()['df%d'%i] = pd.read_sql(d['sql'], con=db_engine)
         except Exception as e:
+            print(str(e))
             send_task_status(task_id, TASKSTATUS_FAILED, "Error in retrieving data from MSSQL: " + str(e))
             exit(1)
     elif db_type == 'oracle':
@@ -109,6 +112,7 @@ for i, d in enumerate(task_info['db']):
                 time.sleep(5)
             locals()['df%d'%i] = pd.read_sql(d['sql'], con=db_engine)
         except Exception as e:
+            print(str(e))
             send_task_status(task_id, TASKSTATUS_FAILED, "Error in retrieving data from OracleDB: " + str(e))
             exit(1)
     elif db_type == 'mongodb':
@@ -128,24 +132,27 @@ for i, d in enumerate(task_info['db']):
             mongo_cursor = mongo_db[tbl_name].find({}, filterj)
             locals()['df%d'%i] = pd.DataFrame(list(mongo_cursor))
         except Exception as e:
+            print(str(e))
             send_task_status(task_id, TASKSTATUS_FAILED, "Error in retrieving data from MongoDB: " + str(e))
             exit(1)
     print(locals()['df%d'%i])
 
-# use pandasql to join tables
-try:
-    pysqldf   = lambda q: sqldf(q, globals())
-    send_task_status(task_id, TASKSTATUS_PROCESSING, "Joining two tables")
-    if do_sleep:
-        time.sleep(10)
-    df_joined = pysqldf(task_info['join_sql'])
-except Exception as e:
-    send_task_status(task_id, TASKSTATUS_FAILED, "Error in joining the two tables: " + str(e))
-    exit(1)
-
-#print(df_joined)
-columns_order = task_info['hds']['columns']
-df_joined = df_joined.reindex(columns_order, axis=1)
+if len(task_info['db']) < 2:
+    df_joined = df0
+else:
+    # use pandasql to join tables
+    try:
+        pysqldf   = lambda q: sqldf(q, globals())
+        send_task_status(task_id, TASKSTATUS_PROCESSING, "Joining two tables")
+        if do_sleep:
+            time.sleep(10)
+        df_joined = pysqldf(task_info['join_sql'])
+        columns_order = task_info['hds']['columns']
+        df_joined = df_joined.reindex(columns_order, axis=1)
+    except Exception as e:
+        print(str(e))
+        send_task_status(task_id, TASKSTATUS_FAILED, "Error in joining the two tables: " + str(e))
+        exit(1)
 print(df_joined)
 
 
@@ -170,6 +177,7 @@ process = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE, stdout=subpr
 stdout, stderr = process.communicate()
 exit_code = process.wait()
 if exit_code != 0:
+    print(stderr.decode('utf-8'))
     send_task_status(task_id, TASKSTATUS_FAILED, "Failed to import table into HDS\n" + stderr.decode('utf-8'))
     exit(1)
 else:
