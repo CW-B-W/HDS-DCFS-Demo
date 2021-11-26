@@ -4,9 +4,18 @@ import urllib.parse
 import json
 
 def main():
+    try_times = 10
+    while try_times > 0:
+        try:
     credentials = pika.PlainCredentials('brad', '00000000')
     connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost', credentials=credentials))
-    channel = connection.channel()
+            channel = connection.channel()
+            break
+        except:
+            try_times -= 1
+            if try_times >= 1:
+                print("Connection failed. Retry in 3 seconds")
+                time.sleep(3)
 
     channel.queue_declare(queue='task_req')
 

@@ -15,7 +15,7 @@ import sqlalchemy
 from sqlalchemy import create_engine
 import json
 from pymongo import MongoClient
-
+from cassandra.cluster import Cluster
 
 
 ''' ========== RabbitMQ ========== '''
@@ -114,6 +114,27 @@ for i, d in enumerate(task_info['db']):
         except Exception as e:
             print(str(e))
             send_task_status(task_id, TASKSTATUS_FAILED, "Error in retrieving data from OracleDB: " + str(e))
+            exit(1)
+    elif db_type == 'cassandra':
+        try:
+            username = d['username']
+            password = d['password']
+            ip       = d['ip']
+            port     = d['port']
+            db_name  = d['db']
+            cluster = Cluster([ip],port=9042)
+            session = cluster.connect()
+            rows = session.execute(d['sql'])
+#            local()['df%d'%i] = df1
+#            db_url   = 'oracle+cx_oracle://%s:%s@%s:%s/?service_name=%s' % (username, password, ip, port, db_name)
+#            db_engine          = create_engine(db_url)
+            send_task_status(task_id, TASKSTATUS_PROCESSING, "Retrieving data from Cassandra")
+            if do_sleep:
+                time.sleep(5)
+            locals()['df%d'%i] = pd.DataFrame(rows)
+        except Exception as e:
+            print(str(e))
+            send_task_status(task_id, TASKSTATUS_FAILED, "Error in retrieving data from Cassandra: " + str(e))
             exit(1)
     elif db_type == 'mongodb':
         try:
