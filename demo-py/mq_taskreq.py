@@ -2,6 +2,7 @@
 import pika, sys, os
 import urllib.parse
 import json
+import time
 
 def main():
     try_times = 10
