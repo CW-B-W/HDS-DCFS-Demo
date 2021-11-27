@@ -655,7 +655,7 @@ $(document).ready(function() {
             'task_id': task_id,
             'db': [
                 {
-                    'type': 'mysql',
+                    'type': $("#db1_list").val().toLowerCase(),
                     'username': mysql_username,
                     'password': mysql_password,
                     'ip': mysql_ip,
@@ -664,7 +664,7 @@ $(document).ready(function() {
                     'sql': mysql_sql
                 },
                 {
-                    'type': 'mongo',
+                    'type': 'mongodb',
                     'username': mongodb_username,
                     'password': mongodb_password,
                     'ip': mongodb_ip,
@@ -755,7 +755,7 @@ $(document).ready(function() {
         return task_info;
     }
 
-    function gen_col_opt_elems(mysql_key_names, mongodb_key_names) {
+    function import_gen_col_opt_elems(mysql_key_names, mongodb_key_names) {
         key_names = mysql_key_names.concat(mongodb_key_names);
         key_names = key_names.filter(function(value, index, self) {
             return self.indexOf(value) === index;
@@ -764,6 +764,24 @@ $(document).ready(function() {
         for (i in key_names) {
             key_name = key_names[i];
             elem = $("#import_col_opt_template").clone().appendTo($("#import_col_opt_list")[0]);
+            elem.removeAttr('id');
+            elem.css('visibility', 'visible');
+            elem.children().eq(0).children().eq(0).text(key_name);
+            elem.children().eq(1).children().eq(0).attr('id', 'typeopt_'+key_name);
+            elem.children().eq(3).children().eq(0).val(key_name);
+            elem.children().eq(3).children().eq(1).text(key_name);
+            elem.children().eq(3).children().eq(0).prop('checked', true);
+        }
+    }
+    function gen_col_opt_elems(mysql_key_names, mongodb_key_names) {
+        key_names = mysql_key_names.concat(mongodb_key_names);
+        key_names = key_names.filter(function(value, index, self) {
+            return self.indexOf(value) === index;
+        });
+
+        for (i in key_names) {
+            key_name = key_names[i];
+            elem = $("#col_opt_template").clone().appendTo($("#col_opt_list")[0]);
             elem.removeAttr('id');
             elem.css('visibility', 'visible');
             elem.children().eq(0).children().eq(0).text(key_name);
@@ -878,6 +896,25 @@ $(document).ready(function() {
     }
 
     function gen_hds_sql(key_info) {
+        key_info = sort_key_info(key_info);
+        table_name = $('#hds_table_name').val().replace(/ /g,"_");
+        sql = 'CREATE TABLE IF NOT EXISTS ' + table_name + ' (';
+        for (k in key_info) {
+            if (key_info[k]['is_primary']) {
+                sql += k + ' ' + key_info[k]['type'] + ' PRIMARY KEY, ';
+                break;
+            }
+        }
+        for (k in key_info) {
+            if (!key_info[k]['is_primary']) {
+                sql += k + ' ' + key_info[k]['type'] + ', ';
+            }
+        }
+        sql = sql.substring(0, sql.length-2);
+        sql += ');';
+        return sql;
+    }
+    function import_gen_hds_sql(key_info) {
         key_info = sort_key_info(key_info);
         table_name = $('#import_hds_table_name').val().replace(/ /g,"_");
         sql = 'CREATE TABLE IF NOT EXISTS ' + table_name + ' (';
@@ -1097,7 +1134,7 @@ $(document).ready(function() {
             }
         }
         
-        hds_sql     = gen_hds_sql(key_info);
+        hds_sql     = import_gen_hds_sql(key_info);
         hds_table   = $('#import_hds_table_name').val().replace(/ /g,"_");
         hds_columns = gen_hds_columns(key_info);
 
@@ -1148,67 +1185,7 @@ $(document).ready(function() {
 
 
 
-    /* ================= TaskStatus =================== */
-    function send_task_status_req() {
-        args = ''
-        ids = $('#task_ids').text();
-        if (ids !== '') {
-            args = '?task_id=' + ids.replace(/\s/g, '');
-        }
-        $.ajax({
-            "type": "GET",
-            "dataType": "json",
-            "contentType": "application/json",
-            "url": 'http://192.168.103.120:5000/taskstatus' + args,
-            "timeout": 30000,
-            success: function(result) {
-                children = $('#task_status_res').children();
-                for (i = 1; i < children.length; ++i) {
-                    children[i].remove();
-                }
-                for (i in result) {
-                    task = result[i];
-                    task_id = task['task_id'];
-                    task_scode = task['status'];
-                    task_msg = task['message'];
-                    task_status = ''
-                    switch (task_scode) {
-                    case 1:
-                        task_status = "ACCEPTED";
-                        break;
-                    case 2:
-                        task_status = "PROCESSING";
-                        break;
-                    case 3:
-                        task_status = "SUCCEEDED";
-                        break;
-                    case 4:
-                        task_status = "FAILED";
-                        break;
-                    case 5:
-                        task_status = "ERROR";
-                        break;
-                    case 6:
-                        task_status = "UNKNOWN";
-                        break;
-                    }
-
-                    elem = $("#task_res_template").clone().appendTo($("#task_status_res")[0]);
-                    elem.removeAttr('id');
-                    elem.css('visibility', 'visible');
-                    elem.children().eq(0).children().eq(1).text(task_id);
-                    elem.children().eq(1).children().eq(1).text(task_status);
-                    elem.children().eq(2).children().eq(1).text(task_msg);
-                }
-            },
-            error: function(jqXHR, JQueryXHR, textStatus) {
-                alert("Failed to get task status");
-            }
-        });
-    }
-    // $("#send_task_status").click(send_task_status_req);
-    setInterval(send_task_status_req, 2000);
-    /* ================= TaskStatus =================== */
+    
 
     /* ================= data import ================= */
     $("#dblist").change(function() {
@@ -1233,6 +1210,12 @@ $(document).ready(function() {
             $('#username').val("brad");
             $('#password').val("00000000");
             $("#connect").text("Connect MongoDB")
+        }
+        else if(sel_idx == "Cassandra"){
+            $('#server').val("192.168.103.125:9042");
+            $('#username').val("brad");
+            $('#password').val("00000000");
+            $("#connect").text("Connect Casseandra")
         }
     });
     $("#connect").click(function() {
@@ -1511,21 +1494,98 @@ $(document).ready(function() {
                $('#import_key_list').children()
                .eq(mysql_key_sel_idx[i] - 1).text());
        }
-       if(  ($("#dblist").val() != "MongoDB") ){
-           isOracle=0;
-           if(  ($("#dblist").val() == "Oracle") ){
-               isOracle=1;
-               import_sql = mysql_gen_sql(tbl_name, key_names_1,isOracle);
-           }else{
-               import_sql = mysql_gen_sql(tbl_name, key_names_1,isOracle);
-           }
-           $('#import_genres').text(import_sql);
-       }else{
-           mongodb_filter = mongodb_gen_filter(key_names_1);
-           $('#import_genres').text(JSON.stringify(mongodb_filter));
+       
+       switch($("#dblist").val()){
+            case "MongoDB":
+                mongodb_filter = mongodb_gen_filter(key_names_1);
+                $('#import_genres').text(JSON.stringify(mongodb_filter));
+                break;
+            case "Oracle":
+                isOracle=1;
+                import_sql = mysql_gen_sql(tbl_name, key_names_1,isOracle);
+                $('#import_genres').text(import_sql);
+                break;
+            case "Cassandra":
+                key='';
+                for(i = 0 ; i < key_names_1.length ; i++){
+                    key = key + key_names_1[i];
+                    if(i != key_names_1.length - 1){
+                        key = key + ',';
+                    }
+                }
+                import_sql='SELECT * FROM '+db_name+'.'+tbl_name+'';
+                $('#import_genres').text(import_sql);
+                break;
+            default:
+                isOracle=0;
+                import_sql = mysql_gen_sql(tbl_name, key_names_1,isOracle);
+                $('#import_genres').text(import_sql);
        }
+       
        key_names_2=[];
 
-       gen_col_opt_elems(key_names_1, key_names_2);
+       import_gen_col_opt_elems(key_names_1, key_names_2);
    });
+   /* ================= TaskStatus =================== */
+   function send_task_status_req() {
+        args = ''
+        ids = $('#task_ids').text();
+        if (ids !== '') {
+            args = '?task_id=' + ids.replace(/\s/g, '');
+        }
+        $.ajax({
+            "type": "GET",
+            "dataType": "json",
+            "contentType": "application/json",
+            "url": 'http://192.168.103.120:5000/taskstatus' + args,
+            "timeout": 30000,
+            success: function(result) {
+                children = $('#task_status_res').children();
+                for (i = 1; i < children.length; ++i) {
+                    children[i].remove();
+                }
+                for (i in result) {
+                    task = result[i];
+                    task_id = task['task_id'];
+                    task_scode = task['status'];
+                    task_msg = task['message'];
+                    task_status = ''
+                    switch (task_scode) {
+                    case 1:
+                        task_status = "ACCEPTED";
+                        break;
+                    case 2:
+                        task_status = "PROCESSING";
+                        break;
+                    case 3:
+                        task_status = "SUCCEEDED";
+                        break;
+                    case 4:
+                        task_status = "FAILED";
+                        break;
+                    case 5:
+                        task_status = "ERROR";
+                        break;
+                    case 6:
+                        task_status = "UNKNOWN";
+                        break;
+                    }
+
+                    elem = $("#task_res_template").clone().appendTo($("#task_status_res")[0]);
+                    elem.removeAttr('id');
+                    elem.css('visibility', 'visible');
+                    elem.children().eq(0).children().eq(1).text(task_id);
+                    elem.children().eq(1).children().eq(1).text(task_status);
+                    elem.children().eq(2).children().eq(1).text(task_msg);
+                }
+            },
+            error: function(jqXHR, JQueryXHR, textStatus) {
+                alert("Failed to get task status");
+            }
+        });
+    }   
+    // $("#send_task_status").click(send_task_status_req);
+    setInterval(send_task_status_req, 2000);
+    /* ================= TaskStatus =================== */
+   
 });
