@@ -198,7 +198,11 @@ df_joined.to_csv(tmp_csv_path, index=False, header=False)
 import subprocess
 #phoenix_home = os.environ['PHOENIX_HOME']
 phoenix_home = "/home/brad/phoenix-hbase-2.3-5.1.2-bin"
-cmd = phoenix_home+"/bin/psql.py 192.168.103.151 -t \"%s\" %s %s" % (table_name.upper(), tmp_sql_path, tmp_csv_path)
+if 'ip' in task_info['hds']:
+    hds_ip = task_info['hds']['ip']
+else:
+    hds_ip = '192.168.103.151'
+cmd = phoenix_home+"/bin/psql.py %s -t \"%s\" %s %s" % (hds_ip, table_name.upper(), tmp_sql_path, tmp_csv_path)
 process = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
 stdout, stderr = process.communicate()
 exit_code = process.wait()
