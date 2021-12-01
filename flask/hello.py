@@ -194,7 +194,7 @@ def phoenix_list_all_keys(table_name, ip, port='1521'):
 ''' ================ Phoenix ================ '''
 
 
-''' ================ oracle ================ '''
+
 ''' ================ Elasticsearch ================ '''
 from elasticsearch import Elasticsearch
 #elasticsearch lib
