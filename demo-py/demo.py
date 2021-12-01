@@ -16,7 +16,10 @@ from sqlalchemy import create_engine
 import json
 from pymongo import MongoClient
 from cassandra.cluster import Cluster
-
+from elasticsearch import Elasticsearch
+#elasticsearch lib
+from pandas.io.json import json_normalize
+from elasticsearch_dsl import Search
 
 ''' ========== RabbitMQ ========== '''
 import pika, sys
@@ -117,12 +120,13 @@ for i, d in enumerate(task_info['db']):
             exit(1)
     elif db_type == 'cassandra':
         try:
+            
             username = d['username']
             password = d['password']
             ip       = d['ip']
             port     = d['port']
             db_name  = d['db']
-            cluster = Cluster([ip],port=9042)
+            cluster = Cluster([ip],port=port)
             session = cluster.connect()
             rows = session.execute(d['sql'])
 #            local()['df%d'%i] = df1
@@ -135,6 +139,29 @@ for i, d in enumerate(task_info['db']):
         except Exception as e:
             print(str(e))
             send_task_status(task_id, TASKSTATUS_FAILED, "Error in retrieving data from Cassandra: " + str(e))
+            exit(1)
+    elif db_type == 'elasticsearch':
+        try:
+            username = d['username']
+            password = d['password']
+            ip       = d['ip']
+            port     = d['port']
+            db_name  = d['db']
+
+            es=Elasticsearch(hosts=ip, port=port)
+            result=es.sql.query(body={'query': d['sql']})
+            col = []
+            l = len(result['columns'])
+            for x in range(l):
+                col.append(result['columns'][x]['name'])
+            #df = pd.DataFrame(result['rows'],columns =col)
+            send_task_status(task_id, TASKSTATUS_PROCESSING, "Retrieving data from Elasticsearch")
+            if do_sleep:
+                time.sleep(5)
+            locals()['df%d'%i] = pd.DataFrame(result['rows'],columns =col)
+        except Exception as e:
+            print(str(e))
+            send_task_status(task_id, TASKSTATUS_FAILED, "Error in retrieving data from Elasticsearch: " + str(e))
             exit(1)
     elif db_type == 'mongodb':
         try:
@@ -160,7 +187,6 @@ for i, d in enumerate(task_info['db']):
         print("Unsupported DB type " + db_type)
         send_task_status(task_id, TASKSTATUS_FAILED, "Unsupported DB type " + db_type)
         exit(1)
-        
     print(locals()['df%d'%i])
 
 if len(task_info['db']) < 2:
