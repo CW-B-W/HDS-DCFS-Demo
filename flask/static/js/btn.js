@@ -64,10 +64,10 @@ $(document).ready(function() {
             $("#conn_mongodb").text("Connect Cassandra")
         }
         else if(sel_idx == "Elasticsearch"){
-            $('#mysql_server').val("192.168.103.125:9200");
-            $('#mysql_username').val("brad");
-            $('#mysql_password').val("00000000");
-            $("#conn_mysql").text("Connect Elasticsearch")
+            $('#mongodb_server').val("192.168.103.125:9200");
+            $('#mongodb_username').val("brad");
+            $('#mongodb_password').val("00000000");
+            $("#conn_mongodb").text("Connect Elasticsearch")
         }
     });
     
