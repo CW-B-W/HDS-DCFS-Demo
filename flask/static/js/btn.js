@@ -1042,11 +1042,36 @@ $(document).ready(function() {
         sql = sql.substr(0, sql.length-2);
         sql += " FROM " + $("#hds_table_list option:selected").text();
         console.log(sql);
+        access1 = 'http://'+$("#hds_server").val()+'/dataservice/v1/access?from=jdbc:///&info=jdbc:phoenix:192.168.103.151:2181&query='+sql+'&to=file:///tmp/web_download_tmp/'+$("#download_file_name").val()+'.csv&async=true&redirectfrom=192.168.103.151'
+        //href = 'http://'+$("#hds_server").val()+'/dataservice/v1/list?from=jdbc:///&info=jdbc:phoenix:192.168.103.151:2181'
+        access1 = encodeURI(access1)
+        access2 = 'http://'+$("#hds_server").val()+'/dataservice/v1/access?from=file:///tmp/web_download_tmp/'+$("#download_file_name").val()+'.csv&to=local:///'+$("#download_file_name").val()+'.csv'
+        $.ajax({
+            "type": "GET",
+            "dataType": "json",
+            "contentType": "application/json",
+            "url": access1,
+            "timeout": 30000,
+            success: function(result) {
+                tk_id=JSON.stringify(result['task']['id']).replace(/%/gi,"%25")
+                tk_id=tk_id.replace(/"/gi,"")
+                $('#hds_page_task_id').text(tk_id);
+                $('#hds_rest_api').text(access1);
+                $('#download_rest_api').text(access2);
+                watch_api = 'http://192.168.103.151:8000/dataservice/v1/watch?id='+tk_id+''
+                $('#watch_rest_api').text(watch_api);
+                
+            },
+            error: function(jqXHR, JQueryXHR, textStatus) {
+                alert("Download failed");
+            }
+        });
 
-        href = 'http://'+$("#hds_server").val()+'/dataservice/v1/access?from=jdbc:///&info=jdbc:phoenix:192.168.103.151:2181&query='+sql+'&to=local:///result.csv'
+        /*href = 'http://'+$("#hds_server").val()+'/dataservice/v1/access?from=jdbc:///&info=jdbc:phoenix:192.168.103.151:2181&query='+sql+'&to=local:///result.csv'
         href = encodeURI(href)
-        new_a = $.parseHTML('<a href='+href+' class="link-success">Download link</a>');
-        $('#hds_key_list').parent().append(new_a);
+        new_a = $.parseHTML('<a href='+href+' class="link-success">'+href+'</a>');
+        $('#hds_key_list').parent().append(new_a);*/
+        
     });
     $("#conn_hds").click(function() {
         $.ajax({

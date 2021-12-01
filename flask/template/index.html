@@ -280,16 +280,8 @@
           <form>
             <div class="form-group">
               <label>Server</label>
-              <input type="text" class="form-control" id="hds_server" placeholder="Enter ServerIP:Port" value="192.168.103.53:8000">
+              <input type="text" class="form-control" id="hds_server" placeholder="Enter ServerIP:Port" value="192.168.103.151:8000">
             </div>
-            <!-- <div class="form-group">
-              <label>Username</label>
-              <input type="email" class="form-control" id="hds_username" placeholder="Enter Username" value="brad">
-            </div>
-            <div class="form-group">
-              <label>Password</label>
-              <input type="password" class="form-control" id="hds_password" placeholder="Password" value="00000000">
-            </div> -->
             <button id="conn_hds" type="button" class="btn btn-primary w-100">Connect HDS</button>
           </form>
           <br><br>
@@ -298,13 +290,42 @@
           </select>
           <br><br>
           <select id="hds_key_list" class="form-select w-100" style="height: 300px;" multiple>
-            
           </select>
+          <label>File name</label>
+          <input type="text" class="form-control" id="download_file_name" placeholder="Enter ServerIP:Port" value="result">
         </div>
       </div>
- 
+      
       <div class="row">
         <button id="send_hds_req" type="button" class="btn btn-success w-100">Send Request</button>
+      </div>
+
+      <div class="container overflow-auto" id="hds_page_task_status" style="height: 1000px;">
+        
+        <div class="row">
+          <div class="col">
+            <label>Task ID</label>
+            <textarea class="form-control" id="hds_page_task_id" rows="5" readonly></textarea>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col">
+            <label>HDS REST API</label>
+            <textarea class="form-control" id="hds_rest_api" rows="3" readonly></textarea>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col">
+            <label>Download REST API</label>
+            <textarea class="form-control" id="download_rest_api" rows="3" readonly></textarea>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col">
+            <label>Watch REST API</label>
+            <textarea class="form-control" id="watch_rest_api" rows="3" readonly></textarea>
+          </div>
+        </div>
       </div>
     </div>
 
